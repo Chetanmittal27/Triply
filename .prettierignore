@@ -1,0 +1,20 @@
+# Dependency directories
+node_modules
+bower_components
+
+# Build output
+dist
+build
+coverage
+
+# Environment and config
+.env
+.env.*
+package-lock.json
+yarn.lock
+
+# Logs
+*.log
+
+# Misc
+*.tmp
