@@ -1,5 +1,5 @@
 import express from "express";
-const app = express();
+import app from "./app.js";
 
 // dotenv is import so that all the environment variables are loaded before the server starts
 import dotenv from "dotenv";
