@@ -1,12 +1,22 @@
 import express from "express";
-
 const app = express();
 
-app.get("/hello" , (req , res) => {
-    res.send("Hello World");
+// dotenv is import so that all the environment variables are loaded before the server starts
+import dotenv from "dotenv";
+import ConnectDB from "./db/index.js";
+dotenv.config({
+    path: "./config/.env"
 });
 
 
-app.listen(4000 , () => {
-    console.log("Listening on Port 4000");
+const port = process.env.PORT || 2000;
+
+ConnectDB()
+.then(() => {
+    app.listen(port , () => {
+        console.log(`App is listening on the port ${port}`);
+    });
+})
+.catch((error) => {
+    console.log("Database Connection Failed..." , error.message);
 });
