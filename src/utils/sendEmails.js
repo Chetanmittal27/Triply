@@ -1,4 +1,6 @@
 import nodemailer from "nodemailer";
+import dotenv from "dotenv"
+dotenv.config();
 
 const sendEmail = async({to, subject , html}) => {
 
@@ -6,14 +8,14 @@ const sendEmail = async({to, subject , html}) => {
         {
             service: "gmail",
             auth: {
-                user:"chakshu0527@gmail.com",
-                pass:"jowd ogwp jcjl nuyo"
+                user: process.env.MY_EMAIL,
+                pass: process.env.MY_PASS
             }
         }
     );
 
     transporter.sendMail({
-        from: "chakshu0527@gmail.com",
+        from: process.env.MY_EMAIL,
         to,
         subject,
         html

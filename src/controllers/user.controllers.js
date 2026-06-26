@@ -3,6 +3,8 @@ import {ApiError} from "../utils/ApiError.js";
 import {User} from "../models/user.models.js";
 import {uploadOnCloudinary} from "../utils/cloudinary.js";
 import {ApiResponse} from "../utils/ApiResponse.js";
+import crypto from "crypto"
+import {sendEmail} from "../utils/sendEmails.js"
 
 const registerUser = asyncHandler(async(req , res) => {
 
@@ -63,9 +65,31 @@ const registerUser = asyncHandler(async(req , res) => {
     if(!user){
         throw new ApiError(500 , "User Not Created");
     }
+
+
+    // create a verfication token
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+    user.emailVerificationToken = verificationToken;
+    await user.save({validateBeforeSave: false});
+
     
+    // verifying email
+    await sendEmail({
+        to: user.email,
+        subject: "Verify your Triply Account",
+        html: `
+        <h2>Welcome To Triply!</h2>
+        <p>Click below to verify your Triply Account</p>
+        <a href="${process.env.BASE_URL}/api/auth/verify-email?token=${verificationToken}">
+        Verify Email
+        </a>
+        `
+    });
+
+
+
     const createdUser = await User.findById(user._id).select(
-        "-password -refreshToken"
+        "-password -refreshToken -emailVerificationToken"
     );
 
 
