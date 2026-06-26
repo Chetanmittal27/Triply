@@ -21,7 +21,7 @@ function fileFilter(req, file, cb){
 }
 
 
-const upload = multer(
+export const upload = multer(
     { 
         storage: storage,
         limits: {

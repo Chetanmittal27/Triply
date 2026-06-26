@@ -22,4 +22,10 @@ app.use(cookieParser());
 express.static("public/temp")
 
 
+
+// Routes
+import userRouter from "./routes/user.routes.js"
+
+app.use("/api/users" , userRouter);
+
 export default app;

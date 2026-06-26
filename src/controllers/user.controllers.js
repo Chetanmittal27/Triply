@@ -28,7 +28,7 @@ const registerUser = asyncHandler(async(req , res) => {
     };
 
     
-    // 4) 
+    // 4) Check for files
 });
 
 
