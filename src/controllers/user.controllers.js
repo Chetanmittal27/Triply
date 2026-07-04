@@ -100,3 +100,60 @@ const registerUser = asyncHandler(async(req , res) => {
 });
 
 
+const loginUser = asyncHandler(async(req , res) => {
+
+    const {username , email , password} = req.body;
+
+    if(!username && !email){
+        throw new ApiError(400 , "Either Username or Email is Required");
+    }
+
+    if(!password){
+        throw new ApiError(400 , "Password is Required");
+    }
+
+
+    const existedUser = await User.findOne(
+        {
+            $or: [{username} , {email}]
+        }
+    );
+
+    if(!existedUser){
+        throw new ApiError(404 , "User with entered email or username does not exist"); 
+    }
+
+
+    const isPasswordCorrect = await existedUser.isPasswordCorrect(password);
+
+    if(!isPasswordCorrect){
+        throw new ApiError(401 , "Password is Incorrect");
+    }
+
+
+    // Create access and refresh token
+    const accessToken = await existedUser.createAccessToken();
+    const refreshToken = await existedUser.createRefreshToken();
+
+    existedUser.refreshToken = refreshToken;
+    await existedUser.save({validateBeforeSave: false});
+
+
+    const user = await User.findById(existedUser._id).select(
+        "-password -refreshToken -emailVerificationToken"
+    );
+
+    const options = {
+        httpOnly: true,
+        secure: true
+    };
+
+    return res.status(200)
+    .cookie("accessToken" , accessToken , options)
+    .cookie("refreshToken" , refreshToken , options)
+    .json(
+        new ApiResponse(200 , user , "User LoggedIn Successfully")
+    )
+});
+
+export {registerUser , loginUser};
