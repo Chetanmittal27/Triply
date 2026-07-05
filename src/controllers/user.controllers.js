@@ -81,7 +81,7 @@ const registerUser = asyncHandler(async(req , res) => {
         html: `
         <h2>Welcome To Triply!</h2>
         <p>Click below to verify your Triply Account</p>
-        <a href="${process.env.BASE_URL}/api/auth/verify-email?token=${verificationToken}">
+        <a href="${process.env.BASE_URL}/api/users/verify-email?token=${verificationToken}">
         Verify Email
         </a>
         `
@@ -124,6 +124,11 @@ const loginUser = asyncHandler(async(req , res) => {
         throw new ApiError(404 , "User with entered email or username does not exist"); 
     }
 
+
+    // add this after finding user
+    if(!existedUser.isVerified){
+        throw new ApiError(403, "Please verify your email first")
+    } 
 
     const isPasswordCorrect = await existedUser.isPasswordCorrect(password);
 
@@ -231,4 +236,101 @@ const RefreshAccessToken = asyncHandler(async(req , res) => {
 });
 
 
-export {registerUser , loginUser , logoutUser , RefreshAccessToken};
+const verifyEmail = asyncHandler(async(req , res) => {
+
+    // User clicks link in email
+    //     ↓
+    // Browser hits this URL:
+    // GET /api/auth/verify-email?token=abc123
+    //     ↓
+    // Your verifyEmail controller runs
+    //     ↓
+    // Find user with that token in DB
+    //     ↓
+    // Mark as verified + clear token
+    //     ↓
+    // Return success
+
+
+    // Get verification token when link is clicked
+    const {token} = req.query;
+
+    if(!token){
+        throw new ApiError(400, "Verification Token is Required")
+    }
+
+    const user = await User.findOne({emailVerificationToken: token});
+
+    if(!user){
+        throw new ApiError(404 , "User not found");
+    }
+
+    const isVerified = user.isVerified;
+
+    if(isVerified){
+        throw new ApiError(401 , "User Already Verified");
+    }
+
+
+    user.isVerified = true;
+
+    user.emailVerificationToken = null;
+
+    await user.save({validateBeforeSave: false});
+
+    return res.status(200)
+    .json(
+        new ApiResponse(200 , {} , "User Verified Successfully")
+    );
+});
+
+
+const resendVerifyEmail = asyncHandler(async(req , res) => {
+
+    const {email} = req.body;
+
+    if(!email){
+        throw new ApiError(401 , "Email is Required");
+    }
+
+    const user = await User.findOne({email});
+
+    if(!user){
+        throw new ApiError(404 , "User does not exist with this email");
+    }
+
+
+    if(user.isVerified){
+        throw new ApiError(400 , "User already verified, No need to resend verfication email");
+    }
+
+
+    const verificationToken = crypto.randomBytes(32).toString("hex");
+
+    user.emailVerificationToken = verificationToken;
+    await user.save({validateBeforeSave: false});
+
+    await sendEmail(
+        {
+            to: user.email,
+            subject: "Verify Your Triply Account",
+            html: `
+            <h2>Welcome to Triply!</h2>
+            <p>Click the link below to verify your Triply Account</p>
+            <a href="${process.env.BASE_URL}/api/users/verify-email?token=${verificationToken}">
+            Verify Email
+            </a>
+            `
+        }
+    );
+
+
+    return res.status(200)
+    .json(
+        new ApiResponse(200 , {} , "Verification Mail again sent successfully")
+    );
+});
+
+
+
+export {registerUser , loginUser , logoutUser , RefreshAccessToken , verifyEmail , resendVerifyEmail};
