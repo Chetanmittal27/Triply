@@ -61,4 +61,61 @@ const updateProfile = asyncHandler(async(req , res) => {
 
 });
 
-export {getProfile , updateProfile};
+
+const updateAvatar = asyncHandler(async(req , res) => {
+
+    const newAvatarPath = req.file?.path;
+
+    if(!newAvatarPath){
+        throw new ApiError(400 , "Avatar is Required");
+    }
+
+
+    const existeduser = await User.findById(req.user._id).select(
+        "-password -refreshToken -emailVerificationToken"
+    )
+
+    if(!existeduser){
+        throw new ApiError(400 , "User not found");
+    }
+
+    
+
+    const cloudAvatarPath = await uploadOnCloudinary(newAvatarPath);
+
+    if(!cloudAvatarPath.url){
+        throw new ApiError(500 , "Problem in uploading avatar on cloudinary");
+    }
+
+
+    // Delete old avatar from Cloudinary if exists
+    if(existeduser.avatar?.public_id){
+        await cloudinary.uploader.destroy(existeduser.avatar.public_id);
+    }
+
+    const user = await User.findByIdAndUpdate(
+        req.user._id,
+
+        {
+            $set: {
+                avatar: {
+                    url: cloudAvatarPath.url,
+                    public_id: cloudAvatarPath.public_id
+                }
+            }
+        },
+
+        {new: true}
+    ).select(
+        "-password -refreshToken -emailVerificationToken"
+    );
+
+
+    return res.status(200)
+    .json(
+        new ApiResponse(200 , user , "Avatar updated Successfully")
+    );
+
+})
+
+export {getProfile , updateProfile , updateAvatar};

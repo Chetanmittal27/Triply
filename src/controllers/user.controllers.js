@@ -36,19 +36,19 @@ const registerUser = asyncHandler(async(req , res) => {
     // 4) Check for files
     const avatarLocalPath = Array.isArray(req.files?.avatar) && req.files.avatar.length > 0 ? req.files.avatar[0].path : undefined;
     
-    if(!avatarLocalPath){
-        throw new ApiError(400 , "Avatar is required");
-    }
-
     const coverImageLocalPath = Array.isArray(req.files?.coverImage) && req.files.coverImage.length > 0 ? req.files.coverImage[0].path : undefined;
 
 
     // 5) Upload files on cloudinary
-    const avatar = await uploadOnCloudinary(avatarLocalPath);
-    const coverImage = await uploadOnCloudinary(coverImageLocalPath);
+    const avatar = avatarLocalPath? await uploadOnCloudinary(avatarLocalPath) : null;
+    const coverImage = coverImageLocalPath? await uploadOnCloudinary(coverImageLocalPath) : null;
 
-    if(!avatar){
+    if(avatarLocalPath && !avatar.url){
         throw new ApiError(500, "Failed to upload avatar");
+    }
+
+    if(coverImageLocalPath && !coverImage.url){
+        throw new ApiError(500 , "Failed to upload cover image");
     }
 
     // Create db
@@ -59,8 +59,14 @@ const registerUser = asyncHandler(async(req , res) => {
         password,
         mobileNumber,
         gender,
-        avatar: avatar.url,
-        coverImage: coverImage?.url || ""
+        avatar: {
+            url: avatar?.url || `https://ui-avatars.com/api/?name=${encodeURIComponent(fullName)}`,
+            public_id: avatar?.public_id || ""
+        },
+        coverImage: {
+            url: coverImage?.url || "",
+            public_id: coverImage?.public_id || ""
+        }
     });
 
     if(!user){
