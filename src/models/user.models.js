@@ -36,13 +36,13 @@ const userSchema = new mongoose.Schema(
         },
 
         avatar: {
-            url: {type: String , default: ""},
-            public_id: { type: String, default: ""},
+            url: { type: String, default: "" },
+            public_id: { type: String, default: "" }
         },
 
         coverImage: {
-            url: {type: String, default: ""},
-            public_id: {type: String, default: ""}
+            url: { type: String, default: "" },
+            public_id: { type: String, default: "" }
         },
 
         isVerified: {
