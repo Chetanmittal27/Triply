@@ -55,10 +55,10 @@ const userSchema = new mongoose.Schema(
             enum: ["Male" , "Female" , "Prefer Not To Say"]
         },
 
-        emailVerificationToken: {
-            type: String,
-            default: null
-        },
+        emailVerificationToken: { type: String, default: null },
+        emailVerificationExpires: { type: Date, default: null },
+        passwordResetToken: { type: String, default: null },
+        passwordResetExpires: { type: Date, default: null },
 
         refreshToken: {
             type: String,
@@ -70,12 +70,10 @@ const userSchema = new mongoose.Schema(
 );
 
 
-userSchema.pre("save" , async function(next){
-    if(!this.isModified("password")) return next();
+userSchema.pre("save" , async function(){
+    if(!this.isModified("password")) return;
 
     this.password = await bcrypt.hash(this.password , 10);
-
-    next();
 });
 
 

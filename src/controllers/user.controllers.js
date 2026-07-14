@@ -10,20 +10,23 @@ import jwt from "jsonwebtoken";
 const registerUser = asyncHandler(async(req , res) => {
 
     // 1) Access Data entered by user
-    const {username , email , fullName, password , mobileNumber , gender} = req.body
+    let {username , email , fullName, password , mobileNumber , gender} = req.body
+    username = username?.trim().toLowerCase(); email = email?.trim().toLowerCase(); fullName = fullName?.trim(); mobileNumber = mobileNumber?.trim(); gender = gender?.trim();
 
     // 2) validate data entered by user
     if(
         [username, email, fullName, password , mobileNumber , gender].some((field) => 
-            field?.trim() === "")
+            !field || field.trim() === "")
         ){
             throw new ApiError(400 , "All Fields are Required");
         }
 
+    if (password.length < 8) throw new ApiError(400, "Password must be at least 8 characters");
+
     // 3) check db already exists or not with the entered username and email
     const existedUser = await User.findOne(
         {
-            $or: [{username} , {email}]
+            $or: [username ? { username } : null, email ? { email } : null].filter(Boolean)
         }
     );
 
@@ -71,6 +74,7 @@ const registerUser = asyncHandler(async(req , res) => {
     // create a verfication token
     const verificationToken = crypto.randomBytes(32).toString("hex");
     user.emailVerificationToken = verificationToken;
+    user.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
     await user.save({validateBeforeSave: false});
 
     
@@ -81,7 +85,7 @@ const registerUser = asyncHandler(async(req , res) => {
         html: `
         <h2>Welcome To Triply!</h2>
         <p>Click below to verify your Triply Account</p>
-        <a href="${process.env.BASE_URL}/api/users/verify-email?token=${verificationToken}">
+        <a href="${process.env.BASE_URL}/api/auth/verify-email?token=${verificationToken}">
         Verify Email
         </a>
         `
@@ -103,7 +107,8 @@ const registerUser = asyncHandler(async(req , res) => {
 
 const loginUser = asyncHandler(async(req , res) => {
 
-    const {username , email , password} = req.body;
+    let {username , email , password} = req.body;
+    username = username?.trim().toLowerCase(); email = email?.trim().toLowerCase();
 
     if(!username && !email){
         throw new ApiError(400 , "Either Username or Email is Required");
@@ -116,18 +121,18 @@ const loginUser = asyncHandler(async(req , res) => {
 
     const existedUser = await User.findOne(
         {
-            $or: [{username} , {email}]
+            $or: [username ? { username } : null, email ? { email } : null].filter(Boolean)
         }
     );
 
     if(!existedUser){
-        throw new ApiError(404 , "User with entered email or username does not exist"); 
+        throw new ApiError(404 , "No account found for that email or username. Register first or check the spelling."); 
     }
 
 
     // add this after finding user
     if(!existedUser.isVerified){
-        throw new ApiError(403, "Please verify your email first")
+        throw new ApiError(403, "Please verify your email first. Check your inbox for the verification link.")
     } 
 
     const isPasswordCorrect = await existedUser.isPasswordCorrect(password);
@@ -151,14 +156,15 @@ const loginUser = asyncHandler(async(req , res) => {
 
     const options = {
         httpOnly: true,
-        secure: true
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
     };
 
     return res.status(200)
     .cookie("accessToken" , accessToken , options)
     .cookie("refreshToken" , refreshToken , options)
     .json(
-        new ApiResponse(200 , user , "User LoggedIn Successfully")
+        new ApiResponse(200 , { user, accessToken, refreshToken } , "User LoggedIn Successfully")
     )
 });
 
@@ -181,7 +187,8 @@ const logoutUser = asyncHandler(async(req , res) => {
 
     const options = {
         httpOnly: true,
-        secure: true
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
     }
 
 
@@ -202,7 +209,12 @@ const RefreshAccessToken = asyncHandler(async(req , res) => {
         throw new ApiError(400 , "Unauthorised Request");
     }
 
-    const decodedRefreshToken = jwt.verify(incomingRefreshToken , process.env.REFRESH_TOKEN_SECRET);
+    let decodedRefreshToken;
+    try {
+        decodedRefreshToken = jwt.verify(incomingRefreshToken , process.env.REFRESH_TOKEN_SECRET);
+    } catch {
+        throw new ApiError(401, "Refresh token is invalid or expired");
+    }
 
 
     const user = await User.findById(decodedRefreshToken._id);
@@ -218,18 +230,22 @@ const RefreshAccessToken = asyncHandler(async(req , res) => {
 
 
     const newAccessToken = await user.createAccessToken();
+    const newRefreshToken = await user.createRefreshToken();
+    user.refreshToken = newRefreshToken;
+    await user.save({ validateBeforeSave: false });
 
     const options = {
         httpOnly: true,
-        secure: true
+        secure: process.env.NODE_ENV === "production",
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax"
     }
 
     
     return res.status(200)
     .cookie("accessToken" , newAccessToken , options)
-    .cookie("refreshToken" , incomingRefreshToken , options)
+    .cookie("refreshToken" , newRefreshToken , options)
     .json(
-        new ApiResponse(200 , {newAccessToken , incomingRefreshToken} , "Access Token Refreshed")
+        new ApiResponse(200 , { newAccessToken, refreshToken: newRefreshToken } , "Access Token Refreshed")
     );
 
 
@@ -238,50 +254,29 @@ const RefreshAccessToken = asyncHandler(async(req , res) => {
 
 const verifyEmail = asyncHandler(async(req , res) => {
 
-    // User clicks link in email
-    //     ↓
-    // Browser hits this URL:
-    // GET /api/auth/verify-email?token=abc123
-    //     ↓
-    // Your verifyEmail controller runs
-    //     ↓
-    // Find user with that token in DB
-    //     ↓
-    // Mark as verified + clear token
-    //     ↓
-    // Return success
-
-
-    // Get verification token when link is clicked
     const {token} = req.query;
+    const frontend = process.env.FRONTEND_URL || process.env.BASE_URL || "http://localhost:5173";
 
     if(!token){
-        throw new ApiError(400, "Verification Token is Required")
+        return res.redirect(`${frontend}/email-verified?status=error&message=${encodeURIComponent("Verification token is required")}`);
     }
 
-    const user = await User.findOne({emailVerificationToken: token});
+    const user = await User.findOne({ emailVerificationToken: token, emailVerificationExpires: { $gt: new Date() } });
 
     if(!user){
-        throw new ApiError(404 , "User not found");
+        return res.redirect(`${frontend}/email-verified?status=error&message=${encodeURIComponent("Verification link is invalid or expired")}`);
     }
 
-    const isVerified = user.isVerified;
-
-    if(isVerified){
-        throw new ApiError(401 , "User Already Verified");
+    if(user.isVerified){
+        return res.redirect(`${frontend}/email-verified?status=already`);
     }
-
 
     user.isVerified = true;
-
     user.emailVerificationToken = null;
-
+    user.emailVerificationExpires = null;
     await user.save({validateBeforeSave: false});
 
-    return res.status(200)
-    .json(
-        new ApiResponse(200 , {} , "User Verified Successfully")
-    );
+    return res.redirect(`${frontend}/email-verified?status=success`);
 });
 
 
@@ -290,7 +285,7 @@ const resendVerifyEmail = asyncHandler(async(req , res) => {
     const {email} = req.body;
 
     if(!email){
-        throw new ApiError(401 , "Email is Required");
+        throw new ApiError(400 , "Email is Required");
     }
 
     const user = await User.findOne({email});
@@ -308,6 +303,7 @@ const resendVerifyEmail = asyncHandler(async(req , res) => {
     const verificationToken = crypto.randomBytes(32).toString("hex");
 
     user.emailVerificationToken = verificationToken;
+    user.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
     await user.save({validateBeforeSave: false});
 
     await sendEmail(
@@ -317,7 +313,7 @@ const resendVerifyEmail = asyncHandler(async(req , res) => {
             html: `
             <h2>Welcome to Triply!</h2>
             <p>Click the link below to verify your Triply Account</p>
-            <a href="${process.env.BASE_URL}/api/users/verify-email?token=${verificationToken}">
+            <a href="${process.env.BASE_URL}/api/auth/verify-email?token=${verificationToken}">
             Verify Email
             </a>
             `
@@ -334,3 +330,62 @@ const resendVerifyEmail = asyncHandler(async(req , res) => {
 
 
 export {registerUser , loginUser , logoutUser , RefreshAccessToken , verifyEmail , resendVerifyEmail};
+const updateAvatar = asyncHandler(async (req, res) => {
+    if (!req.file) throw new ApiError(400, "Avatar image is required");
+    const avatar = await uploadOnCloudinary(req.file.path);
+    if (!avatar) throw new ApiError(502, "Avatar upload failed");
+    const user = await User.findByIdAndUpdate(req.user._id, { avatar: avatar.secure_url || avatar.url }, { new: true }).select("-password -refreshToken -emailVerificationToken");
+    res.json(new ApiResponse(200, user, "Avatar updated successfully"));
+});
+const updateCoverImage = asyncHandler(async (req, res) => {
+    if (!req.file) throw new ApiError(400, "Cover image is required");
+    const cover = await uploadOnCloudinary(req.file.path);
+    if (!cover) throw new ApiError(502, "Cover image upload failed");
+    const user = await User.findByIdAndUpdate(req.user._id, { coverImage: cover.secure_url || cover.url }, { new: true }).select("-password -refreshToken -emailVerificationToken");
+    res.json(new ApiResponse(200, user, "Cover image updated successfully"));
+});
+const changePassword = asyncHandler(async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) throw new ApiError(400, "currentPassword and newPassword are required");
+    if (newPassword.length < 8) throw new ApiError(400, "New password must be at least 8 characters");
+    const user = await User.findById(req.user._id);
+    if (!(await user.isPasswordCorrect(currentPassword))) throw new ApiError(401, "Current password is incorrect");
+    user.password = newPassword; user.refreshToken = null; await user.save();
+    res.json(new ApiResponse(200, {}, "Password changed successfully; please sign in again"));
+});
+const getProfile = asyncHandler(async (req, res) => res.json(new ApiResponse(200, req.user, "Profile fetched successfully")));
+const updateProfile = asyncHandler(async (req, res) => {
+    const allowed = ["fullName", "mobileNumber", "gender"];
+    const update = Object.fromEntries(allowed.filter((key) => req.body[key] !== undefined).map((key) => [key, req.body[key]]));
+    const user = await User.findByIdAndUpdate(req.user._id, update, { new: true, runValidators: true }).select("-password -refreshToken -emailVerificationToken");
+    res.json(new ApiResponse(200, user, "Profile updated successfully"));
+});
+export { updateAvatar, updateCoverImage, changePassword, getProfile, updateProfile };
+
+
+const forgotPassword = asyncHandler(async (req, res) => {
+    const email = req.body.email?.trim().toLowerCase();
+    if (!email) throw new ApiError(400, "Email is required");
+    const user = await User.findOne({ email });
+    if (user) {
+        const token = crypto.randomBytes(32).toString("hex");
+        user.passwordResetToken = token;
+        user.passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000);
+        await user.save({ validateBeforeSave: false });
+        await sendEmail({ to: user.email, subject: "Reset your Triply password", html: `<p>Reset your password within one hour:</p><a href="${process.env.FRONTEND_URL || process.env.BASE_URL}/reset-password?token=${token}">Reset password</a>` });
+    }
+    res.json(new ApiResponse(200, {}, "If an account exists for that email, a reset link has been sent."));
+});
+
+const resetPassword = asyncHandler(async (req, res) => {
+    const { token, password } = req.body;
+    if (!token || !password) throw new ApiError(400, "Token and password are required");
+    if (password.length < 8) throw new ApiError(400, "Password must be at least 8 characters");
+    const user = await User.findOne({ passwordResetToken: token, passwordResetExpires: { $gt: new Date() } });
+    if (!user) throw new ApiError(400, "Reset link is invalid or expired");
+    user.password = password; user.passwordResetToken = null; user.passwordResetExpires = null; user.refreshToken = null;
+    await user.save();
+    res.json(new ApiResponse(200, {}, "Password reset successfully. Please sign in."));
+});
+
+export { forgotPassword, resetPassword };

@@ -19,6 +19,8 @@ const fileSchema = new mongoose.Schema(
             required: true
         },
 
+        publicId: { type: String, default: "" },
+
         url: {
             type: String,
             required: true

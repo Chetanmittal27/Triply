@@ -55,6 +55,8 @@ const tripSchema = new mongoose.Schema(
             default: "Not Started"
         },
 
+        threeDayReminderSentAt: { type: Date, default: null },
+
         shareLink: {
             type: String,
             unique: true,

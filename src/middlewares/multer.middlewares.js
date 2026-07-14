@@ -1,14 +1,20 @@
 import multer from "multer";
+import fs from "fs";
+import path from "path";
 
+const uploadDir = path.join("public", "temp");
+// Ensure the destination directory exists on boot -- multer will not
+// create it for you and uploads fail with ENOENT otherwise.
+fs.mkdirSync(uploadDir, { recursive: true });
 
 const storage = multer.diskStorage({
 
   destination: function (req, file, cb) {
-    cb(null, '/public/temp')
+    cb(null, uploadDir)
   },
 
   filename: function (req, file, cb) {
-    cb(null, file.originalname)
+    cb(null, `${Date.now()}-${file.originalname.replace(/[^a-zA-Z0-9._-]/g, "_")}`)
   }
 })
 

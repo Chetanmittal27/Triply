@@ -1,31 +1,12 @@
 import mongoose from "mongoose";
 
-const itinerarySchema = new mongoose.Schema(
-    {
-        tripId: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: "Trip",
-            required: true
-        },
+const itinerarySchema = new mongoose.Schema({
+    tripId: { type: mongoose.Schema.Types.ObjectId, ref: "Trip", required: true },
+    dayNumber: { type: Number, required: true, min: 1 },
+    desc: { type: String, default: "" },
+    onDate: { type: Date, required: true }
+}, { timestamps: true });
 
-        dayNumber: {
-            type: Number,
-            required: true
-        },
+itinerarySchema.index({ tripId: 1, dayNumber: 1 }, { unique: true });
 
-        desc: {
-            type: String,
-            default: ""
-        },
-
-        onDate: {
-            type: Date,
-            required: true
-        },
-
-
-    } , {timestamps: true}
-);
-
-
-export const Itinerary = mongoose.model("Itinerary" , itinerarySchema);
+export const Itinerary = mongoose.model("Itinerary", itinerarySchema);

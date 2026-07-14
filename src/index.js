@@ -1,22 +1,9 @@
-import express from "express";
+import http from "http";
 import app from "./app.js";
-
-// dotenv is import so that all the environment variables are loaded before the server starts
 import dotenv from "dotenv";
 import ConnectDB from "./db/index.js";
-dotenv.config({
-    path: "./config/.env"
-});
-
-
+import { createSocketServer } from "./socket.js";
+import { startTripReminderJob } from "./jobs/tripReminder.job.js";
+dotenv.config();
 const port = process.env.PORT || 2000;
-
-ConnectDB()
-.then(() => {
-    app.listen(port , () => {
-        console.log(`App is listening on the port ${port}`);
-    });
-})
-.catch((error) => {
-    console.log("Database Connection Failed..." , error.message);
-});
+ConnectDB().then(() => { const server = http.createServer(app); createSocketServer(server); startTripReminderJob(); server.listen(port, () => console.log(`Triply API listening on port ${port}`)); }).catch((error) => console.log("Database connection failed:", error.message));

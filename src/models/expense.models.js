@@ -27,13 +27,13 @@ const expenseSchema = new mongoose.Schema(
 
         onDateTime: {
             type: Date,
-            default: Date.now()
+            default: Date.now
         },
 
         category: {
             type: String,
             enum: ["Food", "Transport", "Hotel", "Shopping", "Adventure", "Other"],
-            default: "other"
+            default: "Other"
         }
 
     } , {timestamps: true}
