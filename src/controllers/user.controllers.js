@@ -85,7 +85,7 @@ const registerUser = asyncHandler(async(req , res) => {
 
     
     // verifying email
-    await sendEmail({
+    sendEmail({
         to: user.email,
         subject: "Verify your Triply Account",
         html: `
@@ -95,7 +95,7 @@ const registerUser = asyncHandler(async(req , res) => {
         Verify Email
         </a>
         `
-    });
+    }).catch((err) => console.error("Failed to send verification email:", err.message));
 
 
 
@@ -299,19 +299,17 @@ const resendVerifyEmail = asyncHandler(async(req , res) => {
     user.emailVerificationExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
     await user.save({validateBeforeSave: false});
 
-    await sendEmail(
-        {
-            to: user.email,
-            subject: "Verify Your Triply Account",
-            html: `
-            <h2>Welcome to Triply!</h2>
-            <p>Click the link below to verify your Triply Account</p>
-            <a href="${process.env.BASE_URL}/api/auth/verify-email?token=${verificationToken}">
-            Verify Email
-            </a>
-            `
-        }
-    );
+    sendEmail({
+        to: user.email,
+        subject: "Verify your Triply Account",
+        html: `
+        <h2>Welcome To Triply!</h2>
+        <p>Click below to verify your Triply Account</p>
+        <a href="${process.env.BASE_URL}/api/auth/verify-email?token=${verificationToken}">
+        Verify Email
+        </a>
+        `
+    }).catch((err) => console.error("Failed to send verification email:", err.message));
 
 
     return res.status(200)
@@ -387,7 +385,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
         user.passwordResetToken = token;
         user.passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000);
         await user.save({ validateBeforeSave: false });
-        await sendEmail({ to: user.email, subject: "Reset your Triply password", html: `<p>Reset your password within one hour:</p><a href="${process.env.FRONTEND_URL || process.env.BASE_URL}/reset-password?token=${token}">Reset password</a>` });
+        sendEmail({ to: user.email, subject: "Reset your Triply password", html: `<p>Reset your password within one hour:</p><a href="${process.env.FRONTEND_URL || process.env.BASE_URL}/reset-password?token=${token}">Reset password</a>` });
     }
     res.json(new ApiResponse(200, {}, "If an account exists for that email, a reset link has been sent."));
 });
