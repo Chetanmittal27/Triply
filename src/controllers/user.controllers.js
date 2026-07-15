@@ -385,7 +385,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
         user.passwordResetToken = token;
         user.passwordResetExpires = new Date(Date.now() + 60 * 60 * 1000);
         await user.save({ validateBeforeSave: false });
-        sendEmail({ to: user.email, subject: "Reset your Triply password", html: `<p>Reset your password within one hour:</p><a href="${process.env.FRONTEND_URL || process.env.BASE_URL}/reset-password?token=${token}">Reset password</a>` });
+        sendEmail({ to: user.email, subject: "Reset your Triply password", html: `<p>Reset your password within one hour:</p><a href="${process.env.FRONTEND_URL || process.env.BASE_URL}/reset-password?token=${token}">Reset password</a>` }).catch((err) => console.error("Failed to send password reset email:", err.message));
     }
     res.json(new ApiResponse(200, {}, "If an account exists for that email, a reset link has been sent."));
 });
