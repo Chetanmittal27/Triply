@@ -26,7 +26,7 @@ app.use(
 );
 
 app.options("*", cors({
-  origin: "https://triply-green.vercel.app",
+  origin: process.env.CORS_ORIGIN || "http://localhost:5173",
   credentials: true,
 }));
 
