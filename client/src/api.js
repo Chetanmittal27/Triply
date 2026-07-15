@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:2000/api";
+const API_URL = (import.meta.env.VITE_API_URL || "http://localhost:2000/api").replace(/\/+$/, "");
 let accessToken = localStorage.getItem("triply_access_token");
 
 export const setToken = (token) => {
