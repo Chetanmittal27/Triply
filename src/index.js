@@ -1,5 +1,8 @@
+import dns from "dns";
+dns.setDefaultResultOrder("ipv4first");
 import http from "http";
 import app from "./app.js";
+
 import dotenv from "dotenv";
 import ConnectDB from "./db/index.js";
 import { createSocketServer } from "./socket.js";
