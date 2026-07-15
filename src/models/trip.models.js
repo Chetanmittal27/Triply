@@ -61,7 +61,6 @@ const tripSchema = new mongoose.Schema(
             type: String,
             unique: true,
             sparse: true,                     // enforces unique on documents where this field has some value , ignore null values
-            default: null
         }
 
     },{timestamps: true}

@@ -55,8 +55,9 @@ export const deleteItinerary = asyncHandler(async (req, res) => {
 const DEFAULT_AI_MODEL = "meta-llama/llama-3.3-70b-instruct:free";
 
 const requestAiPlan = async (trip, preferences) => {
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    if (!apiKey) throw new ApiError(503, "AI itinerary generation is not configured. Set OPENROUTER_API_KEY.");
+    const stripQuotes = (value) => value?.trim().replace(/^["']|["']$/g, "");
+    const apiKey = stripQuotes(process.env.OPENROUTER_API_KEY);
+    if (!apiKey || apiKey.startsWith("your_")) throw new ApiError(503, "AI itinerary generation is not configured. Set a real OPENROUTER_API_KEY in .env and restart the server.");
     const days = buildDays(trip.startDate, trip.endDate);
     const prompt = `Create a practical ${days.length}-day trip itinerary for ${trip.destination}. Interests: ${preferences.interests || "general sightseeing"}. Daily budget: ${preferences.budgetPerDay || "unspecified"}. Travel style: ${preferences.travelStyle || "balanced"}. Return ONLY valid JSON, no markdown fences, no commentary: {"days":[{"dayNumber":1,"description":"...","activities":[{"title":"...","description":"...","location":"...","time":"09:00","type":"Sightseeing"}]}]}. Use each day exactly once.`;
     let response;
@@ -64,7 +65,7 @@ const requestAiPlan = async (trip, preferences) => {
         response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}`, "HTTP-Referer": process.env.FRONTEND_URL || "http://localhost:5173", "X-Title": "Triply" },
-            body: JSON.stringify({ model: process.env.OPENROUTER_MODEL || DEFAULT_AI_MODEL, temperature: 0.3, max_tokens: 4000, messages: [{ role: "user", content: prompt }] })
+            body: JSON.stringify({ model: stripQuotes(process.env.OPENROUTER_MODEL) || DEFAULT_AI_MODEL, temperature: 0.3, max_tokens: 4000, messages: [{ role: "user", content: prompt }] })
         });
     } catch { throw new ApiError(503, "AI provider is unreachable"); }
     const payload = await response.json().catch(() => ({}));

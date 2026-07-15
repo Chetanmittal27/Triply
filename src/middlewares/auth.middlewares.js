@@ -13,7 +13,12 @@ export const verifyJWT = asyncHandler(async(req , res , next) => {
     }
 
     // give the object of payload that is originally signed
-    const decodedToken = await jwt.verify(token , process.env.ACCESS_TOKEN_SECRET);
+    let decodedToken;
+    try {
+        decodedToken = jwt.verify(token , process.env.ACCESS_TOKEN_SECRET);
+    } catch {
+        throw new ApiError(401 , "Access token is invalid or expired");
+    }
 
     const user = await User.findById(decodedToken._id).select(
         "-password -refreshToken -emailVerificationToken"
@@ -27,5 +32,3 @@ export const verifyJWT = asyncHandler(async(req , res , next) => {
 
     next();
 });
-
-

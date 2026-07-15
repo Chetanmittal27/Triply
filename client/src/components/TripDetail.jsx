@@ -32,6 +32,8 @@ export default function TripDetail({ tripId, user, back }) {
   const socketRef = useRef(null);
 
   const isOwner = trip && user && String(trip.owner?._id || trip.owner) === String(user._id);
+  const ownerId = String(trip?.owner?._id || trip?.owner || "");
+  const otherMembers = trip?.members?.filter((m) => String(m._id) !== ownerId) || [];
 
   const loadTrip = () => api(`/trips/${tripId}`).then(setTrip).catch((e) => setError(e.message));
   const loadItinerary = () => api(`/trips/${tripId}/itinerary`).then(setDays).catch((e) => setError(e.message));
@@ -242,11 +244,11 @@ export default function TripDetail({ tripId, user, back }) {
       <div className="member-row">
         <span className="muted">
           With {trip.owner?.fullName || "owner"}
-          {trip.members?.length ? ` and ${trip.members.length} other${trip.members.length > 1 ? "s" : ""}` : ""}
+          {otherMembers.length ? ` and ${otherMembers.length} other${otherMembers.length > 1 ? "s" : ""}` : ""}
         </span>
-        {trip.members?.length > 0 && (
+        {otherMembers.length > 0 && (
           <ul className="member-list">
-            {trip.members.map((m) => (
+            {otherMembers.map((m) => (
               <li key={m._id}>
                 {m.fullName}
                 {isOwner && (
