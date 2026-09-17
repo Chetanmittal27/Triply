@@ -1,0 +1,2 @@
+import { Router } from "express"; import { verifyJWT } from "../middlewares/auth.middlewares.js"; import { upload } from "../middlewares/multer.middlewares.js"; import * as c from "../controllers/file.controllers.js";
+const router=Router();router.use(verifyJWT);router.post("/:tripId/files",upload.single("file"),c.uploadFile);router.get("/:tripId/files",c.getFiles);router.delete("/:tripId/files/:fileId",c.deleteFile);export default router;

@@ -1,0 +1,3 @@
+import { Router } from "express"; import { verifyJWT } from "../middlewares/auth.middlewares.js"; import * as c from "../controllers/trip.controllers.js";
+const router=Router(); router.get("/public/:shareLink",c.getPublicTrip); router.use(verifyJWT); router.post("/",c.createTrip); router.get("/",c.getAllTrips); router.get("/:id",c.getTripById); router.patch("/:id",c.updateTrip); router.delete("/:id",c.deleteTrip); router.post("/:id/members",c.inviteMember); router.delete("/:id/members/:userId",c.removeMember); router.post("/:id/leave",c.leaveTrip); router.post("/:id/share-link",c.generateShareLink); export default router;
+

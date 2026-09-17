@@ -1,0 +1,2 @@
+import { Router } from "express"; import { verifyJWT } from "../middlewares/auth.middlewares.js"; import * as c from "../controllers/activity.controllers.js";
+const router=Router();router.use(verifyJWT);router.post("/:tripId/itinerary/:itineraryId/activities",c.addActivity);router.get("/:tripId/itinerary/:itineraryId/activities",c.getActivities);router.patch("/:tripId/itinerary/:itineraryId/activities/:activityId",c.updateActivity);router.delete("/:tripId/itinerary/:itineraryId/activities/:activityId",c.deleteActivity);export default router;
