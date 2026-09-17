@@ -10,6 +10,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { getTripForMember, getTripForOwner } from "../utils/tripAccess.js";
 import { sendEmail } from "../utils/sendEmails.js";
+import { getWeatherForDestination } from "../utils/weather.js";
 
 const dateRange = (start, end) => {
     const dates = [];
@@ -95,9 +96,44 @@ export const generateShareLink = asyncHandler(async (req, res) => {
 });
 
 export const getPublicTrip = asyncHandler(async (req, res) => {
-    const trip = await Trip.findOne({ shareLink: req.params.shareLink }).select("-members").populate("owner", "username fullName avatar");
-    if (!trip) throw new ApiError(404, "Public trip not found");
-    const itinerary = await Itinerary.find({ tripId: trip._id }).sort({ dayNumber: 1 });
-    const activities = await Activity.find({ itineraryId: { $in: itinerary.map((item) => item._id) } }).sort({ onTime: 1 });
-    res.json(new ApiResponse(200, { trip, itinerary, activities }, "Public trip fetched successfully"));
+    const trip = await Trip.findOne({
+        shareLink: req.params.shareLink
+    })
+        .select("-members")
+        .populate("owner", "username fullName avatar");
+
+    if (!trip) {
+        throw new ApiError(404, "Public trip not found");
+    }
+
+    const itinerary = await Itinerary.find({
+        tripId: trip._id
+    }).sort({
+        dayNumber: 1
+    });
+
+    const activities = await Activity.find({
+        itineraryId: {
+            $in: itinerary.map((item) => item._id)
+        }
+    }).sort({
+        onTime: 1
+    });
+
+    const weather = await getWeatherForDestination(
+        trip.destination
+    );
+
+    res.json(
+        new ApiResponse(
+            200,
+            {
+                trip,
+                itinerary,
+                activities,
+                weather
+            },
+            "Public trip fetched successfully"
+        )
+    );
 });

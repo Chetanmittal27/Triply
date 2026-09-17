@@ -9,6 +9,7 @@ import InviteForm from "./InviteForm";
 import GenerateAiForm from "./GenerateAiForm";
 import DayForm from "./DayForm";
 import Navbar from "./Navbar";
+import { formatCurrency } from "../utils";
 
 const typeClass = {
   Sightseeing: "indigo",
@@ -405,11 +406,11 @@ export default function TripDetail({ tripId, user, back, onNavigate, onLogout })
             {summary && (
               <div className={`budget-bar ${overBudget ? "over" : ""}`}>
                 <p>
-                  Spent ₹{spent.toLocaleString()} {budget > 0 && <>of ₹{budget.toLocaleString()} budget</>}
+                  Spent {formatCurrency(spent)} {budget > 0 && <>of {formatCurrency(budget)} budget</>}
                 </p>
                 {summary.memberCount > 1 && (
                   <p className="muted small">
-                    Equal share: ₹{summary.perPerson.toLocaleString(undefined, { maximumFractionDigits: 2 })} per person ({summary.memberCount} members)
+                    Equal share: {formatCurrency(summary.perPerson)} per person ({summary.memberCount} members)
                   </p>
                 )}
                 {budget > 0 && (
@@ -421,7 +422,7 @@ export default function TripDetail({ tripId, user, back, onNavigate, onLogout })
                   <ul className="category-breakdown">
                     {summary.categories.map((c) => (
                       <li key={c._id}>
-                        {c._id}: ₹{c.total.toLocaleString()}
+                        {c._id}: {formatCurrency(c.total)}
                       </li>
                     ))}
                   </ul>
@@ -439,7 +440,7 @@ export default function TripDetail({ tripId, user, back, onNavigate, onLogout })
                   <li key={expense._id}>
                     <span className={`badge badge-${typeClass[expense.category] || "gray"}`}>{expense.category}</span>
                     <span className="expense-title">{expense.title}</span>
-                    <strong>₹{expense.amount.toLocaleString()}</strong>
+                    <strong>{formatCurrency(expense.amount)}</strong>
                     {(isOwner || String(expense.addedBy?._id || expense.addedBy) === String(user?._id)) && (
                       <span className="row-actions">
                         <button className="link" onClick={() => setModal({ type: "expense", expense })}>Edit</button>
@@ -499,7 +500,7 @@ export default function TripDetail({ tripId, user, back, onNavigate, onLogout })
                         <span>{new Date(date).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}</span>
                         <strong>
                           {Math.round(weather.weather.daily.temperature_2m_min[i])}°–
-                          {Math.round(weather.weather.daily.temperature_2m_max[i])}°
+                          {Math.round(weather.weather.daily.temperature_2m_max[i])}°F
                         </strong>
                       </li>
                     ))}

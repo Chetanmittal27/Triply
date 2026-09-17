@@ -33,7 +33,7 @@ export default function GenerateAiForm({ regenerate, onSave, onCancel }) {
       </label>
       <div className="form-row">
         <label>
-          Budget per day (₹)
+          Budget per day ($)
           <input
             type="number"
             min="0"

@@ -54,7 +54,7 @@ export default function TripForm({ onSave, onCancel, initial, submitLabel = "Sav
     <form className="trip-form" onSubmit={submit}>
       {fields.map((key) => (
         <label key={key}>
-          {key === "budgetLimit" ? "Budget (₹)" : key.replace(/([A-Z])/g, " $1")}
+          {key === "budgetLimit" ? "Budget ($)" : key.replace(/([A-Z])/g, " $1")}
           {key === "description" ? (
             <textarea
               value={form[key] || ""}

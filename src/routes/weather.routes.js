@@ -4,6 +4,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { getTripForMember } from "../utils/tripAccess.js";
+import { getWeatherForDestination } from "../utils/weather.js";
 
 const router = Router();
 
@@ -40,7 +41,7 @@ router.get("/:tripId/weather", verifyJWT, asyncHandler(async (req, res) => {
   let weatherResponse;
   try {
     weatherResponse = await fetch(
-      `https://api.open-meteo.com/v1/forecast?latitude=${place.latitude}&longitude=${place.longitude}&daily=weather_code,temperature_2m_max,temperature_2m_min&timezone=auto`
+      `https://api.open-meteo.com/v1/forecast?latitude=${place.latitude}&longitude=${place.longitude}&daily=weather_code,temperature_2m_max,temperature_2m_min&temperature_unit=fahrenheit&timezone=auto`
     );
   } catch {
     throw new ApiError(502, "Weather service is unreachable right now. Try again shortly.");
