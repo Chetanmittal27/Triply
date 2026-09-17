@@ -37,12 +37,11 @@ export default function Auth({ onLogin }) {
         return;
       }
       if (register) {
-        if (!avatar) throw new Error("Please choose a profile photo");
         const body = new FormData();
         ["fullName", "username", "mobileNumber", "gender", "email", "password"].forEach((key) =>
           body.append(key, values[key] || "")
         );
-        body.append("avatar", avatar);
+        if (avatar) body.append("avatar", avatar);
         await api("/auth/register", { method: "POST", body });
         setNotice("Registered. Check your email to verify the account, then sign in.");
         setMode("login");
@@ -76,12 +75,17 @@ export default function Auth({ onLogin }) {
 
   return (
     <main className="auth">
-      <section>
+      <section className="auth-hero">
         <p className="eyebrow">PLAN TOGETHER</p>
         <h1>Triply</h1>
-        <p>Build memorable journeys with your people.</p>
+        <p>Build memorable journeys with your people — itineraries, budgets, and files, all in one shared trip.</p>
+        <ul className="auth-hero-points">
+          <li>✨ AI-generated day-by-day itineraries</li>
+          <li>💰 Shared expense tracking &amp; splits</li>
+          <li>🔄 Real-time updates with your travel crew</li>
+        </ul>
       </section>
-      <form onSubmit={submit} autoComplete={register ? "on" : "current-password"}>
+      <form className="auth-card" onSubmit={submit} autoComplete={register ? "on" : "current-password"}>
         <h2>{forgot ? "Reset your password" : register ? "Create account" : "Welcome back"}</h2>
 
         {register && (
@@ -95,11 +99,10 @@ export default function Auth({ onLogin }) {
               <option>Prefer Not To Say</option>
             </select>
             <label className="file-label">
-              Profile photo
+              Profile photo <span className="muted small">(optional)</span>
               <input
                 type="file"
                 accept="image/png,image/jpeg"
-                required
                 onChange={(e) => setAvatar(e.target.files[0])}
               />
             </label>
@@ -122,28 +125,28 @@ export default function Auth({ onLogin }) {
 
         {error && <p className="error">{error}</p>}
         {error?.toLowerCase().includes("verify your email") && (
-          <button type="button" className="link" disabled={resending} onClick={resendVerification}>
+          <button type="button" className="btn btn-ghost" disabled={resending} onClick={resendVerification}>
             {resending ? "Sending…" : "Resend verification email"}
           </button>
         )}
         {notice && <p className="notice">{notice}</p>}
 
-        <button disabled={submitting}>
+        <button className="btn btn-primary" disabled={submitting}>
           {submitting ? "Please wait…" : forgot ? "Send reset link" : register ? "Create account" : "Sign in"}
         </button>
 
         {!forgot && !register && (
-          <button type="button" className="link" onClick={() => switchMode("forgot")}>
+          <button type="button" className="btn btn-link" onClick={() => switchMode("forgot")}>
             Forgot password?
           </button>
         )}
         {forgot && (
-          <button type="button" className="link" onClick={() => switchMode("login")}>
+          <button type="button" className="btn btn-link" onClick={() => switchMode("login")}>
             Back to sign in
           </button>
         )}
         {!forgot && (
-          <button type="button" className="link" onClick={() => switchMode(register ? "login" : "register")}>
+          <button type="button" className="btn btn-link" onClick={() => switchMode(register ? "login" : "register")}>
             {register ? "Already have an account? Sign in" : "New here? Create an account"}
           </button>
         )}

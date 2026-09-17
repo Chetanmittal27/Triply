@@ -37,32 +37,34 @@ export default function ResetPassword() {
   };
 
   return (
-    <main className="auth">
-      <section>
+    <main className="auth auth-single">
+      <div className="auth-card status-card">
         <p className="eyebrow">TRIPLY</p>
         <h1>Reset password</h1>
-      </section>
-      {done ? (
-        <>
-          <p className="notice">Password reset successfully. You can sign in now.</p>
-          <button onClick={() => { window.location.href = "/"; }}>Go to sign in</button>
-        </>
-      ) : (
-        <form className="stack-form" onSubmit={submit}>
-          <label>
-            New password
-            <input type="password" minLength="8" required value={password} onChange={(e) => setPassword(e.target.value)} />
-          </label>
-          <label>
-            Confirm password
-            <input type="password" minLength="8" required value={confirm} onChange={(e) => setConfirm(e.target.value)} />
-          </label>
-          {error && <p className="error">{error}</p>}
-          <div className="form-actions">
-            <button disabled={submitting}>{submitting ? "Saving…" : "Reset password"}</button>
-          </div>
-        </form>
-      )}
+        {done ? (
+          <>
+            <p className="notice">Password reset successfully. You can sign in now.</p>
+            <button className="btn btn-secondary" onClick={() => { window.location.href = "/"; }}>
+              Go to sign in
+            </button>
+          </>
+        ) : (
+          <form className="stack-form" onSubmit={submit}>
+            <label>
+              New password
+              <input type="password" minLength="8" required value={password} onChange={(e) => setPassword(e.target.value)} />
+            </label>
+            <label>
+              Confirm password
+              <input type="password" minLength="8" required value={confirm} onChange={(e) => setConfirm(e.target.value)} />
+            </label>
+            {error && <p className="error">{error}</p>}
+            <div className="form-actions">
+              <button className="btn btn-primary" disabled={submitting}>{submitting ? "Saving…" : "Reset password"}</button>
+            </div>
+          </form>
+        )}
+      </div>
     </main>
   );
 }

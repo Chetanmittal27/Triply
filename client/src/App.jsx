@@ -7,10 +7,12 @@ import TripDetail from "./components/TripDetail";
 import PublicTrip from "./components/PublicTrip";
 import ResetPassword from "./components/ResetPassword";
 import EmailVerified from "./components/EmailVerified";
+import Profile from "./components/Profile";
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [tripId, setTripId] = useState(null);
+  const [view, setView] = useState("trips"); // "trips" | "profile"
   const [checkingSession, setCheckingSession] = useState(true);
 
   const publicMatch = window.location.pathname.match(/^\/public\/(.+)$/);
@@ -36,13 +38,21 @@ export default function App() {
     }
     setToken(null);
     setUser(null);
+    setTripId(null);
+    setView("trips");
+  };
+
+  const navigate = (next) => {
+    setTripId(null);
+    setView(next);
   };
 
   if (publicMatch) return <PublicTrip shareLink={publicMatch[1]} />;
   if (isResetPassword) return <ResetPassword />;
   if (isEmailVerified) return <EmailVerified />;
-  if (checkingSession) return <main><p className="muted">Loading...</p></main>;
+  if (checkingSession) return <main className="page-loading"><div className="spinner" /><p className="muted">Loading Triply…</p></main>;
   if (!user) return <Auth onLogin={setUser} />;
-  if (tripId) return <TripDetail tripId={tripId} user={user} back={() => setTripId(null)} />;
-  return <Trips user={user} openTrip={(trip) => setTripId(trip._id)} onLogout={logout} />;
+  if (tripId) return <TripDetail tripId={tripId} user={user} back={() => setTripId(null)} onNavigate={navigate} onLogout={logout} />;
+  if (view === "profile") return <Profile user={user} setUser={setUser} onNavigate={navigate} onLogout={logout} />;
+  return <Trips user={user} openTrip={(trip) => setTripId(trip._id)} onNavigate={navigate} onLogout={logout} />;
 }

@@ -2,8 +2,18 @@ import { useState } from "react";
 
 const categories = ["Food", "Transport", "Hotel", "Shopping", "Adventure", "Other"];
 
+const toDateTimeInput = (value) => {
+  const date = value ? new Date(value) : new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+};
+
 export default function ExpenseForm({ initial, onSave, onCancel }) {
-  const [form, setForm] = useState(initial || { title: "", amount: "", category: "Other" });
+  const [form, setForm] = useState(
+    initial
+      ? { ...initial, onDateTime: toDateTimeInput(initial.onDateTime) }
+      : { title: "", amount: "", category: "Other", onDateTime: toDateTimeInput() }
+  );
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
 
@@ -17,7 +27,7 @@ export default function ExpenseForm({ initial, onSave, onCancel }) {
     }
     setSaving(true);
     try {
-      await onSave({ ...form, amount });
+      await onSave({ ...form, amount, onDateTime: form.onDateTime ? new Date(form.onDateTime).toISOString() : undefined });
     } catch (err) {
       setError(err.message);
     } finally {
@@ -52,10 +62,18 @@ export default function ExpenseForm({ initial, onSave, onCancel }) {
           </select>
         </label>
       </div>
+      <label>
+        Date &amp; time
+        <input
+          type="datetime-local"
+          value={form.onDateTime}
+          onChange={(e) => setForm({ ...form, onDateTime: e.target.value })}
+        />
+      </label>
       {error && <p className="error">{error}</p>}
       <div className="form-actions">
-        <button disabled={saving}>{saving ? "Saving…" : "Save expense"}</button>
-        <button type="button" className="link" onClick={onCancel}>
+        <button className="btn btn-primary" disabled={saving}>{saving ? "Saving…" : "Save expense"}</button>
+        <button type="button" className="btn btn-ghost" onClick={onCancel}>
           Cancel
         </button>
       </div>

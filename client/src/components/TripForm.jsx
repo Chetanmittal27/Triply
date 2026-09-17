@@ -54,7 +54,7 @@ export default function TripForm({ onSave, onCancel, initial, submitLabel = "Sav
     <form className="trip-form" onSubmit={submit}>
       {fields.map((key) => (
         <label key={key}>
-          {key.replace(/([A-Z])/g, " $1")}
+          {key === "budgetLimit" ? "Budget (₹)" : key.replace(/([A-Z])/g, " $1")}
           {key === "description" ? (
             <textarea
               value={form[key] || ""}
@@ -84,9 +84,9 @@ export default function TripForm({ onSave, onCancel, initial, submitLabel = "Sav
       )}
       {error && <p className="error">{error}</p>}
       <div className="form-actions">
-        <button disabled={saving}>{saving ? "Saving…" : submitLabel}</button>
+        <button className="btn btn-primary" disabled={saving}>{saving ? "Saving…" : submitLabel}</button>
         {onCancel && (
-          <button type="button" className="link" onClick={onCancel}>
+          <button type="button" className="btn btn-ghost" onClick={onCancel}>
             Cancel
           </button>
         )}

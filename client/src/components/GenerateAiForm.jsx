@@ -52,8 +52,8 @@ export default function GenerateAiForm({ regenerate, onSave, onCancel }) {
       </div>
       {error && <p className="error">{error}</p>}
       <div className="form-actions">
-        <button disabled={saving}>{saving ? "Generating…" : regenerate ? "Regenerate" : "Generate"}</button>
-        <button type="button" className="link" onClick={onCancel}>
+        <button className="btn btn-primary" disabled={saving}>{saving ? "Generating…" : regenerate ? "Regenerate" : "Generate"}</button>
+        <button type="button" className="btn btn-ghost" onClick={onCancel}>
           Cancel
         </button>
       </div>
